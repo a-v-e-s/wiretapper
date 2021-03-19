@@ -1,7 +1,8 @@
 #!/bin/bash
 
 sqlite3 $$_`date +%s`.sqlite "CREATE TABLE Songs( \
-title text primary key, \
+filepath text primary key, \
+title text, \
 artist text, \
 album text, \
 length real, \

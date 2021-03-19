@@ -4,6 +4,7 @@ import os
 import re
 import time
 import threading
+import sqlite3
 from functools import partial
 
 
@@ -12,13 +13,27 @@ DEVICE = 'alsa_output.pci-0000_00_1f.3.analog-stereo.monitor'
 COMMAND = 'pacat --record -d ' + DEVICE + ' | sox -t raw -r 44100 -L -e signed-integer -S -b 16 -c 2 - "output.wav"'
 
 
-def wiretap(title, artist, album, length, delay, target_dir, genres, emotions, others):
+def assassinate(delay, target_dir, fn):
+    time.sleep(int(delay))
+    os.popen('kill `pidof sox`')
+    os.popen('kill `pidof pacat`')
+    target = target_dir + '/' + fn
+    print('os.popen("mv output.wav " + ' + target)      # meta debug statement
+    os.popen('mv output.wav ' + target)
 
-    if not type(title) == str:
-        title, artist, album, target_dir = title.get(), artist.get(), album.get(), target_dir.get()
+
+def wiretap(*args):
+
+    title, artist, album, length, delay, target_dir, genres, emotions, others = args
+
+    try:
+        os.nice(-16)
+    except PermissionError:
+        print('tried to raise process priority,')
+        print('but lack root permissions')
 
     fn_pattern = re.compile(r'([0-9a-zA-Z_]+)(\.wav)')
-    possible_fn = title + '_' + artist + '_' + album + '.wav'
+    possible_fn = title.get() + '_' + artist.get() + '_' + album.get() + '.wav'
     if not re.fullmatch(fn_pattern, possible_fn):
         group_pattern = re.compile(r'(.*)(\.wav)')
         prefix = re.match(group_pattern, possible_fn).group(1)
@@ -27,26 +42,39 @@ def wiretap(title, artist, album, length, delay, target_dir, genres, emotions, o
     else:
         fn = possible_fn
 
-    t = threading.Thread(target=os.popen, args=(COMMAND,))
     time.sleep(int(delay.get()))
-    t.start()
-    time.sleep(int(length.get()))
-    os.popen('kill `pidof sox`')
-    os.popen('kill `pidof pacat`')
-    target = target_dir + '/' + fn
-    print('os.popen("mv output.wav " + ' + target)      # meta debug statement
-    os.popen('mv output.wav ' + target)
+    t1 = threading.Thread(target=os.popen, args=(COMMAND,))
+    t2 = threading.Thread(target=assassinate, args=(length.get(), target_dir.get(), fn))
+    t1.start(); t2.start()
 
-    print(); print()
-    for genre in genres.keys():
-        print(genre, str(genres[genre].get()))
-    print(); print()
-    for emotion in emotions.keys():
-        print(emotion, str(emotions[emotion].get()))
-    print(); print()
-    for other in others.keys():
-        print(other, str(others[other].get()))
-    print(); print()
+    #db = sqlite3.Connection('music_db.sqlite')
+    #curs = conn.cursor()
+
+    columns = []
+    for k, v in genres.items():
+        if v.get() == 1:
+            columns.append(k)
+    for k, v in emotions.items():
+        if v.get() == 1:
+            columns.append(k)
+    for k, v in others.items():
+        if v.get() == 1:
+            columns.append(k)
+
+    statement = 'INSERT INTO Songs(filepath, title, artist, album, length, '
+
+    for col in columns:
+        statement += (col + ', ')
+    statement = statement[:-2] + '), ("'+fn+'", "'+title.get()+'", "'+artist.get()+'", "'+album.get()+'", '+str(length.get())+', '
+    for col in columns:
+        statement += '1, '
+    statement = statement[:-2] + ');'
+
+    print(statement)
+
+    #curs.execute(statement)
+    #db.commit()
+    #curs.close(); db.close()
 
 
 if __name__ == '__main__':
@@ -154,7 +182,7 @@ if __name__ == '__main__':
     genres, emotions, others = dict(), dict(), dict()
     g_rownum, g_colnum, e_rownum, e_colnum, o_rownum, o_colnum = 0, 0, 0, 0, 0, 0
     for data in table_info:
-        if data[1] in ['title', 'artist', 'album', 'length']:
+        if data[1] in ['filepath', 'title', 'artist', 'album', 'length']:
             continue
         else:
             var = tk.IntVar()
@@ -189,7 +217,7 @@ if __name__ == '__main__':
             if o_rownum % 7 == 0:
                 o_rownum = 1
                 o_colnum += 2
-            o[data] = var
+            others[data] = var
             tk.Label(other_frame, text=data[1]).grid(row=o_rownum, column=o_colnum)
             tk.Checkbutton(other_frame, variable=var, offvalue=0, onvalue=1).grid(row=o_rownum, column=o_colnum)
 
@@ -201,10 +229,11 @@ if __name__ == '__main__':
 
     buttons = tk.Frame(root)
 
+    args = [title, artist, album, length, delay, target_dir, genres, emotions, others]
     tk.Button(buttons, text='Quit', command=root.destroy).grid(row=1, column=1)
     tk.Button(
         buttons, text='Wiretap!',
-        command=partial(wiretap, title, artist, album, length, delay, target_dir, genres, emotions, others)
+        command=partial(wiretap, *args)
     ).grid(row=1, column=2)
 
     buttons.grid(row=3, column=1)
