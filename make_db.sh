@@ -39,5 +39,8 @@ psychedelic int default 0, \
 country int default 0, \
 classic_rb int default 0, \
 instrumental int default 0, \
-foreign_language int default 0 \
+foreign_language int default 0, \
+triphop int default 0, \
+light_rock int default 0, \
+confirmed int default 0 \
 )" || exit $?

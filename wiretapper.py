@@ -5,6 +5,7 @@ import re
 import time
 import threading
 import sqlite3
+import pickle
 from functools import partial
 
 
@@ -27,7 +28,7 @@ def wiretap(*args):
     title, artist, album, length, delay, target_dir, genres, emotions, others = args
 
     try:
-        os.nice(-16)
+        os.nice(-16)        # we do not want lag in our audio recording.
     except PermissionError:
         print('tried to raise process priority,')
         print('but lack root permissions')
@@ -71,6 +72,15 @@ def wiretap(*args):
     statement = statement[:-2] + ');'
 
     print(statement)
+    try:
+        with open('statements.pkl', 'rb') as pkl:
+            statements = pickle.load(pkl)
+            statements.append(statement)
+    except FileNotFoundError:
+        statements = [statement]
+    finally:
+        with open('statements.pkl', 'wb') as pkl:
+            pickle.dump(statements, pkl)
 
     #curs.execute(statement)
     #db.commit()
@@ -78,7 +88,6 @@ def wiretap(*args):
 
 
 if __name__ == '__main__':
-
 
     import tkinter as tk
     from tkinter.filedialog import askdirectory
@@ -111,6 +120,8 @@ if __name__ == '__main__':
         'psychedelic',
         'country',
         'classic_rb',
+        'triphop',
+        'light_rock'
     ]
     emotion_attrs = [
         'romantic',
@@ -124,6 +135,7 @@ if __name__ == '__main__':
         'cerebral',
         'foreign_language',
         'instrumental',
+        'confirmed'
     ]
 
 
