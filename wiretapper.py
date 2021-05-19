@@ -7,6 +7,7 @@ import threading
 import sqlite3
 import pickle
 from functools import partial
+from sys import exc_info
 
 
 # the secret sauce I found on stack overflow:
@@ -72,15 +73,21 @@ def wiretap(*args):
     statement = statement[:-2] + ');'
 
     print(statement)
+
     try:
         with open('statements.pkl', 'rb') as pkl:
             statements = pickle.load(pkl)
             statements.append(statement)
-    except FileNotFoundError:
+    except (FileNotFoundError, EOFError):
+        print(exc_info())
+        print(' +*+*+  CAUGHT AND HANDLED  +*+*+ ')
         statements = [statement]
     finally:
-        with open('statements.pkl', 'wb') as pkl:
-            pickle.dump(statements, pkl)
+        try:
+            with open('statements.pkl', 'wb') as pkl:
+                pickle.dump(statements, pkl)
+        except Exception:
+            print(exc_info())
 
     #curs.execute(statement)
     #db.commit()
@@ -94,50 +101,13 @@ if __name__ == '__main__':
     from sqlite3 import Connection
 
 
+    emotion_attrs = ['romantic', 'funny', 'melancholy', 'angry', 'happy', 'hypnotic']
+    other_attrs = ['cerebral', 'foreign_language', 'instrumental', 'confirmed']
     genre_attrs = [
-        'synth',
-        'hard_rock',
-        'metal',
-        'gothish',
-        'indie',
-        'pop',
-        'dance',
-        'disco',
-        'house',
-        'trance',
-        'industrial',
-        'new_age',
-        'ambient',
-        'classical',
-        'contemporary',
-        'emo',
-        'classic_rock',
-        'alt_rock',
-        'reggae',
-        'hip_hop',
-        'hardcore_rap',
-        'rb',
-        'psychedelic',
-        'country',
-        'classic_rb',
-        'triphop',
-        'light_rock'
+        'synth', 'hard_rock', 'metal', 'gothish', 'indie', 'pop', 'dance', 'disco', 'house', 'trance',
+        'industrial', 'new_age', 'ambient', 'classical', 'contemporary', 'emo', 'classic_rock', 'alt_rock', 'reggae',
+        'hip_hop', 'hardcore_rap', 'rb', 'psychedelic', 'country', 'classic_rb', 'triphop', 'light_rock'
     ]
-    emotion_attrs = [
-        'romantic',
-        'funny',
-        'melancholy',
-        'angry',
-        'happy',
-        'hypnotic',
-    ]
-    other_attrs = [
-        'cerebral',
-        'foreign_language',
-        'instrumental',
-        'confirmed'
-    ]
-
 
     root = tk.Tk()
     root.title('Wiretapper')
