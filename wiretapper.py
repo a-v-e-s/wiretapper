@@ -49,8 +49,8 @@ def wiretap(*args):
     t2 = threading.Thread(target=assassinate, args=(length.get(), target_dir.get(), fn))
     t1.start(); t2.start()
 
-    #db = sqlite3.Connection('music_db.sqlite')
-    #curs = conn.cursor()
+    conn = sqlite3.Connection('music_db.sqlite')
+    curs = conn.cursor()
 
     columns = []
     for k, v in genres.items():
@@ -67,7 +67,7 @@ def wiretap(*args):
 
     for col in columns:
         statement += (col + ', ')
-    statement = statement[:-2] + '), ("'+fn+'", "'+title.get()+'", "'+artist.get()+'", "'+album.get()+'", '+str(length.get())+', '
+    statement = statement[:-2] + ') VALUES ("'+fn+'", "'+title.get()+'", "'+artist.get()+'", "'+album.get()+'", '+str(length.get())+', '
     for col in columns:
         statement += '1, '
     statement = statement[:-2] + ');'
@@ -89,9 +89,14 @@ def wiretap(*args):
         except Exception:
             print(exc_info())
 
-    #curs.execute(statement)
-    #db.commit()
-    #curs.close(); db.close()
+    try:
+        curs.execute(statement)
+    except Exception:
+        print(exc_info())
+    else:
+        conn.commit()
+    finally:
+        curs.close(); conn.close()
 
 
 if __name__ == '__main__':
@@ -154,6 +159,7 @@ if __name__ == '__main__':
     conn = Connection('music_db.sqlite')
     curs = conn.cursor()
     table_info = curs.execute('pragma table_info(Songs);').fetchall()
+    curs.close(); conn.close()
 
     genre_frame = tk.LabelFrame(attributes, text='Genres:')
 
