@@ -26,7 +26,7 @@ def assassinate(delay, target_dir, fn):
 
 def wiretap(*args):
 
-    title, artist, album, length, delay, target_dir, genres, emotions, others = args
+    title, artist, album, length, delay, target_dir = args
 
     try:
         os.nice(-16)        # we do not want lag in our audio recording.
@@ -52,25 +52,9 @@ def wiretap(*args):
     conn = sqlite3.Connection('music_db.sqlite')
     curs = conn.cursor()
 
-    columns = []
-    for k, v in genres.items():
-        if v.get() == 1:
-            columns.append(k)
-    for k, v in emotions.items():
-        if v.get() == 1:
-            columns.append(k)
-    for k, v in others.items():
-        if v.get() == 1:
-            columns.append(k)
+    statement = 'INSERT INTO Songs(filepath, title, artist, album, length) VALUES ('
 
-    statement = 'INSERT INTO Songs(filepath, title, artist, album, length, '
-
-    for col in columns:
-        statement += (col + ', ')
-    statement = statement[:-2] + ') VALUES ("'+fn+'", "'+title.get()+'", "'+artist.get()+'", "'+album.get()+'", '+str(length.get())+', '
-    for col in columns:
-        statement += '1, '
-    statement = statement[:-2] + ');'
+    statement = statement + '"'+fn+'", "'+title.get()+'", "'+artist.get()+'", "'+album.get()+'", '+str(length.get())+');'
 
     print(statement)
 
@@ -104,15 +88,6 @@ if __name__ == '__main__':
     import tkinter as tk
     from tkinter.filedialog import askdirectory
     from sqlite3 import Connection
-
-
-    emotion_attrs = ['romantic', 'funny', 'melancholy', 'angry', 'happy', 'hypnotic']
-    other_attrs = ['cerebral', 'foreign_language', 'instrumental', 'confirmed']
-    genre_attrs = [
-        'synth', 'hard_rock', 'metal', 'gothish', 'indie', 'pop', 'dance', 'disco', 'house', 'trance',
-        'industrial', 'new_age', 'ambient', 'classical', 'contemporary', 'emo', 'classic_rock', 'alt_rock', 'reggae',
-        'hip_hop', 'hardcore_rap', 'rb', 'psychedelic', 'country', 'classic_rb', 'triphop', 'light_rock'
-    ]
 
     root = tk.Tk()
     root.title('Wiretapper')
@@ -154,70 +129,9 @@ if __name__ == '__main__':
 
     tapper.grid(row=1, column=1)
 
-    attributes = tk.LabelFrame(root, text='Attributes:')
-
-    conn = Connection('music_db.sqlite')
-    curs = conn.cursor()
-    table_info = curs.execute('pragma table_info(Songs);').fetchall()
-    curs.close(); conn.close()
-
-    genre_frame = tk.LabelFrame(attributes, text='Genres:')
-
-    emotion_frame = tk.LabelFrame(attributes, text='Emotions:')
-
-    other_frame = tk.LabelFrame(attributes, text='Other:')
-
-    genres, emotions, others = dict(), dict(), dict()
-    g_rownum, g_colnum, e_rownum, e_colnum, o_rownum, o_colnum = 0, 0, 0, 0, 0, 0
-    for data in table_info:
-        if data[1] in ['filepath', 'title', 'artist', 'album', 'length']:
-            continue
-        else:
-            var = tk.IntVar()
-
-        if data[1] in genre_attrs:
-            g_rownum += 1
-            if g_rownum % 7 == 0:
-                g_rownum = 1
-                g_colnum += 2
-            genres[data[1]] = var
-            tk.Label(genre_frame, text=data[1]).grid(row=g_rownum, column=g_colnum)
-            tk.Checkbutton(genre_frame, variable=var, offvalue=0, onvalue=1).grid(row=g_rownum, column=g_colnum+1)
-        elif data[1] in emotion_attrs:
-            e_rownum += 1
-            if e_rownum % 7 == 0:
-                e_rownum = 1
-                e_colnum += 2
-            emotions[data[1]] = var
-            tk.Label(emotion_frame, text=data[1]).grid(row=e_rownum, column=e_colnum)
-            tk.Checkbutton(emotion_frame, variable=var, offvalue=0, onvalue=1).grid(row=e_rownum, column=e_colnum+1)
-        elif data[1] in other_attrs:
-            o_rownum += 1
-            if o_rownum % 7 == 0:
-                o_rownum = 1
-                o_colnum += 2
-            others[data[1]] = var
-            tk.Label(other_frame, text=data[1]).grid(row=o_rownum, column=o_colnum)
-            tk.Checkbutton(other_frame, variable=var, offvalue=0, onvalue=1).grid(row=o_rownum, column=o_colnum+1)
-        else:
-            #raise LookupError(data)
-            o_rownum += 1
-            if o_rownum % 7 == 0:
-                o_rownum = 1
-                o_colnum += 2
-            others[data] = var
-            tk.Label(other_frame, text=data[1]).grid(row=o_rownum, column=o_colnum)
-            tk.Checkbutton(other_frame, variable=var, offvalue=0, onvalue=1).grid(row=o_rownum, column=o_colnum)
-
-    genre_frame.grid(row=1, column=1)
-    emotion_frame.grid(row=1, column=2)
-    other_frame.grid(row=1, column=3)
-
-    attributes.grid(row=2, column=1)
-
     buttons = tk.Frame(root)
 
-    args = [title, artist, album, length, delay, target_dir, genres, emotions, others]
+    args = [title, artist, album, length, delay, target_dir]
     tk.Button(buttons, text='Quit', command=root.destroy).grid(row=1, column=1)
     tk.Button(
         buttons, text='Wiretap!',

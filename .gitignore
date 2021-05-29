@@ -1,3 +1,4 @@
 *.wav
 *.sqlite
 statements.pkl
+sound_files/
