@@ -8,6 +8,7 @@ import sqlite3
 import pickle
 from functools import partial
 from sys import exc_info
+from difflib import SequenceMatcher
 
 
 # the secret sauce I found on stack overflow:
@@ -15,13 +16,27 @@ DEVICE = 'alsa_output.pci-0000_00_1f.3.analog-stereo.monitor'
 COMMAND = 'pacat --record -d ' + DEVICE + ' | sox -t raw -r 44100 -L -e signed-integer -S -b 16 -c 2 - "output.wav"'
 
 
+def test_if_exists(test_string, dirs, match=0.95):
+    #
+    start_time = time.time()
+    #
+    for dir in dirs:
+        for file in os.listdir(dir):
+            file_string = '_'.join(file.split('_')[:2]).lower()
+            if SequenceMatcher(None, test_string, file_string).ratio() > match:
+                raise FileExistsError(test_string + ' too closely resembles ' + file_string)
+    #
+    stop_time = time.time()
+    print('filename matching took '+str(stop_time-start_time)+' seconds')
+
+
 def assassinate(delay, target_dir, fn):
+    #
     time.sleep(int(delay))
     os.popen('kill `pidof sox`')
     os.popen('kill `pidof pacat`')
     target = target_dir + '/' + fn
-    print('os.popen("mv output.wav " + ' + target)      # meta debug statement
-    os.popen('mv output.wav ' + target)
+    os.rename('output.wav', target)
 
 
 def wiretap(*args):
@@ -43,6 +58,9 @@ def wiretap(*args):
         fn = re.sub(unsafe_characters, '', prefix) + '.wav'
     else:
         fn = possible_fn
+
+    match_test = '_'.join(re.split('_', fn)[:2]).lower()
+    test_if_exists(match_test, ['sound_files/wavs', 'sound_files/mp3s'])
 
     time.sleep(int(delay.get()))
     t1 = threading.Thread(target=os.popen, args=(COMMAND,))
