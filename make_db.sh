@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sqlite3 $$_`date +%s`.sqlite "CREATE TABLE Songs( \
+COMMAND="CREATE TABLE Songs( \
 filepath text primary key, \
 title text, \
 artist text, \
@@ -15,6 +15,7 @@ pop int default 0, \
 cerebral int default 0, \
 dance int default 0, \
 disco int default 0, \
+folk int default 0, \
 house int default 0, \
 trance int default 0, \
 industrial int default 0, \
@@ -43,4 +44,15 @@ foreign_language int default 0, \
 triphop int default 0, \
 light_rock int default 0, \
 confirmed int default 0 \
-)" || exit $?
+)"
+
+if [[ ! -f music_db.sqlite ]]; then
+    sqlite3 music_db.sqlite "$COMMAND" || exit $?
+else
+    echo -e "music_db.sqlite exists!\nRemove and re-create?\t[y/n]"
+    read reply
+    if [[ "$reply" = y ]]; then
+        rm music_db.sqlite
+        sqlite3 music_db.sqlite "$COMMAND" || exit $?
+    fi
+fi
