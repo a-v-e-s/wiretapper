@@ -19,10 +19,12 @@ def listen(src):
 
 
 def clear_all():
+    # clear all the checkboxes:
     for _dict in [genres, emotions, others]:
         for value in _dict.values():
             value.set(0)
     
+    # reset the length and genre values
     length.set('1')
     genre_tag.set('')
 
@@ -35,6 +37,8 @@ def parse_filepath(path):
     t, r, m = fn.split('_')
     m = m[:-4]
     #
+    # try to split up the names using camel_pattern
+    # fallback to previous values if empty string:
     val = ' '.join(re.findall(camel_pattern, t))
     title = val if val else t
     val = ' '.join(re.findall(camel_pattern, r))
@@ -46,7 +50,7 @@ def parse_filepath(path):
 
 
 def convert_to_mp3(src, dst):
-    # convert to mp3 format:
+    # convert to mp3 format, delete original:
     transitional = pydub.AudioSegment.from_mp3(src)
     transitional.export(dst, format='mp3')
     os.remove(src)
@@ -54,18 +58,19 @@ def convert_to_mp3(src, dst):
 
 def meta_data_tag(*tags):
     fn, title, artist, album, genre = tags
-
+    #
+    # load mp3 file and change metadata:
     file = eyed3.load(fn)
     file.tag.title = title
     file.tag.artist = artist
     file.tag.album = album
     file.tag.genre = genre
-
+    #
     file.tag.save()
 
 
 def update_db(genres, emotions, others, source, destination, length, genre_tag):
-    #
+    # check to make sure everything is okay
     assert others['confirmed'].get() == 1 or alert('unconfirmed')
     assert int(length.get()) > 1 or alert('invalid length')
     assert genre_tag.get() or alert('empty genre_tag')
@@ -118,6 +123,7 @@ def update_db(genres, emotions, others, source, destination, length, genre_tag):
 
 
 def alert(text):
+    # display small alert box in case of user error:
     alert = tk.Toplevel()
     alert.title(text)
     tk.Label(alert, text=text).pack()
@@ -125,20 +131,24 @@ def alert(text):
 
 
 def remove(source):
+    # small alert box to require confirmation
+    # before deleting file:
     target = source.get()
     unconfirmed = tk.Toplevel()
     unconfirmed.title('Delete?')
     tk.Label(unconfirmed, text='Really delete '+target+'??').pack()
     tk.Button(unconfirmed, text='Delete!', command=partial(os.remove, target)).pack()
-    tk.Button(unconfirmed, text="Don't Delete!", command=unconfirmed.destroy).pack()
+    tk.Button(unconfirmed, text="Don't Delete! Quit!", command=unconfirmed.destroy).pack()
 
 if __name__ == '__main__':
 
+    # connect to db to get column values:
     conn = sqlite3.Connection('music_db.sqlite')
     curs = conn.cursor()
     table_info = curs.execute('pragma table_info(Songs);').fetchall()
     curs.close(); conn.close()
 
+    # lists of musical traits we categorize:
     emotion_attrs = ['romantic', 'funny', 'melancholy', 'angry', 'happy', 'hypnotic']
     other_attrs = ['cerebral', 'foreign_language', 'instrumental', 'confirmed']
     genre_attrs = [
@@ -147,11 +157,13 @@ if __name__ == '__main__':
         'hip_hop', 'hardcore_rap', 'rb', 'psychedelic', 'country', 'classic_rb', 'triphop', 'light_rock'
     ]
 
+    # begin building the gui:
     root = tk.Tk()
     root.title('Evaluator')
-
+    #
+    # frame for choosing file locations:
     files = tk.LabelFrame(root, text='File:')
-
+    # widgets for locating the .wav file:
     source = tk.StringVar()
     tk.Label(files, text='Source:').grid(row=1, column=1, columnspan=2)
     src = tk.Entry(files, bg='white', width=72, textvariable=source)
@@ -169,7 +181,7 @@ if __name__ == '__main__':
             x.insert(0, os.path.join(dirr, choice(os.listdir(dirr))))
         ]
     )).grid(row=2, column=3)
-
+    # widgets for deciding where to put the mp3:
     destination = tk.StringVar()
     tk.Label(files, text='Destination:').grid(row=3, column=1, columnspan=2)
     dst = tk.Entry(files, bg='white', width=72, textvariable=destination)
@@ -180,24 +192,25 @@ if __name__ == '__main__':
             x.insert(0, askdirectory())
         ]
     )).grid(row=4, column=2)
-
+    #
     files.grid(row=1, column=1)
-
+    #
+    # frame for attributes describing the music:
     attributes = tk.LabelFrame(root, text='Attributes:')
-
+    # how long is it?
     length = tk.StringVar()
     tk.Label(attributes, text='Length').grid(row=1, column=1)
     tk.Spinbox(attributes, width=8, from_=1, to=3600, textvariable=length).grid(row=1, column=2)
-
+    # what is the main genre?
     genre_tag = tk.StringVar()
     tk.Label(attributes, text='Primary Genre (mp3 tag):').grid(row=2, column=1)
     gt = tk.Entry(attributes, bg='white', width=24, textvariable=genre_tag)
     gt.grid(row=2, column=2)
-
+    # frames for the checkboxes:
     genre_frame = tk.LabelFrame(attributes, text='Genres:')
     emotion_frame = tk.LabelFrame(attributes, text='Emotions:')
     other_frame = tk.LabelFrame(attributes, text='Other:')
-
+    # get ready to create the checkboxes:
     genres, emotions, others = dict(), dict(), dict()
     g_rownum, g_colnum, e_rownum, e_colnum, o_rownum, o_colnum = 0, 0, 0, 0, 0, 0
     for data in table_info:
@@ -205,7 +218,8 @@ if __name__ == '__main__':
             continue
         else:
             var = tk.IntVar()
-
+        # formula for creating the checkboxes in their respective frames:
+        # columns of six:
         if data[1] in genre_attrs:
             g_rownum += 1
             if g_rownum % 7 == 0:
@@ -239,22 +253,22 @@ if __name__ == '__main__':
             #others[data] = var
             #tk.Label(other_frame, text=data[1]).grid(row=o_rownum, column=o_colnum)
             #tk.Checkbutton(other_frame, variable=var, offvalue=0, onvalue=1).grid(row=o_rownum, column=o_colnum)
-
+    #
     genre_frame.grid(row=3, column=1, columnspan=2)
     emotion_frame.grid(row=3, column=3, columnspan=2)
     other_frame.grid(row=3, column=5, columnspan=2)
-
+    #
     attributes.grid(row=2, column=1)
-
+    # tkinter frame for our buttons:
     functions = tk.LabelFrame(root, text='Fuctions:')
-    
+    # buttons:
     tk.Button(functions, text='Listen', command=partial(listen, source)).grid(row=1, column=1)
     tk.Button(functions, text='Convert to mp3 and Update DB!', command=partial(
         update_db, genres, emotions, others, source, destination, length, genre_tag)
     ).grid(row=1, column=2)
     tk.Button(functions, text='Delete!', command=partial(remove, source)).grid(row=1, column=3)
     tk.Button(functions, text='Quit', command=root.destroy).grid(row=1, column=4)
-
+    #
     functions.grid(row=3, column=1)
-
+    # run it!
     root.mainloop()
