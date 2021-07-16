@@ -7,6 +7,8 @@ import threading
 from functools import partial
 from sys import exc_info
 from difflib import SequenceMatcher
+import tkinter as tk
+from tkinter.filedialog import askdirectory
 
 
 # the secret sauce I found on stack overflow:
@@ -23,6 +25,10 @@ def test_if_exists(test_string, dirs, match=0.95):
         for file in os.listdir(dir):
             file_string = '_'.join(file.split('_')[:2]).lower()
             if SequenceMatcher(None, test_string, file_string).ratio() > match:
+                alert = tk.Toplevel()
+                alert.title('File Exists!')
+                tk.Label(alert, text=test_string+' Matches '+file_string).pack()
+                tk.Button(alert, text='Okay', command=alert.destroy).pack()
                 raise FileExistsError(test_string + ' too closely resembles ' + file_string)
     # make sure this isn't taking too long:
     stop_time = time.time()
@@ -76,10 +82,6 @@ def wiretap(*args):
 
 
 if __name__ == '__main__':
-
-    import tkinter as tk
-    from tkinter.filedialog import askdirectory
-    
     # begin building gui:
     root = tk.Tk()
     root.title('Wiretapper')
