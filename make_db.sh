@@ -1,6 +1,6 @@
 #!/bin/bash
 
-COMMAND="CREATE TABLE Songs( \
+COMMAND1="CREATE TABLE Songs( \
 filepath text primary key, \
 title text, \
 artist text, \
@@ -44,15 +44,19 @@ foreign_language int default 0, \
 triphop int default 0, \
 light_rock int default 0, \
 confirmed int default 0 \
-)"
+);"
+
+COMMAND2="CREATE TABLE Pickle(title text, artist text, playlist text, downloaded int default 0, converted int default 0);"
 
 if [[ ! -f music_db.sqlite ]]; then
-    sqlite3 music_db.sqlite "$COMMAND" || exit $?
+    sqlite3 music_db.sqlite "$COMMAND1" || exit $?
+    sqlite3 music_db.sqlite "$COMMAND2" || exit $?
 else
     echo -e "music_db.sqlite exists!\nRemove and re-create?\t[y/n]"
     read reply
     if [[ "$reply" = y ]]; then
         rm music_db.sqlite
-        sqlite3 music_db.sqlite "$COMMAND" || exit $?
+        sqlite3 music_db.sqlite "$COMMAND1" || exit $?
+        sqlite3 music_db.sqlite "$COMMAND2" || exit $?
     fi
 fi
