@@ -39,10 +39,6 @@ def update_sqlite_from_pickle():
     I used something like this to update the Pickle table 
     of the Sqlite DB from the Pickle file in one fell swoop.
 
-    The function here might not be perfect because
-    I copied the lines from an interactive session, and
-    it hasn't been tested because why risk screwing things up?
-
     I thought I should save it because it might be
     useful again later if I do mess something up...
     """
