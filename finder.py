@@ -27,3 +27,19 @@ def fined(playlist):
             return_dict['not_found'].append((song,))
     
     return return_dict
+
+
+if __name__ == '__main__':
+    
+    import pickle
+    
+    
+    with open('pan_scrapings.pkl', 'rb') as file:
+        db = pickle.load(file)
+
+    for key in db.keys():
+        d = fined(key)
+        print()
+        print(key)
+        print('FOUND:', str(len(d['found'])), sep='\t')
+        print('NOT FOUND:', str(len(d['not_found'])), sep='\t')
