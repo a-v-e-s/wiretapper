@@ -5,3 +5,5 @@ sound_files/
 __pycache__
 statements.txt
 pan_scrapings.pkl
+todo.txt
+*.bak
