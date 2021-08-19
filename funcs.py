@@ -80,15 +80,17 @@ def update_sqlite_from_pickle():
     curs.close(); conn.close()
 
 
-
 if __name__ == '__main__':    
     
-    with open('pan_scrapings.pkl', 'rb') as file:
-        db = pickle.load(file)
-
-    for key in db.keys():
-        d = fined(key)
+    conn = sqlite3.Connection('music_db.sqlite')
+    curs = conn.cursor()
+    
+    playlists = [x[0] for x in curs.execute('select distinct playlist from Pickle;').fetchall()]
+    for playlist in playlists:
+        print(playlist)
+        d = fined(playlist)
+        print('\tFOUND:\t'+str(len(d['found'])))
+        print('\tNOT FOUND:\t'+str(len(d['not_found'])))
         print()
-        print(key)
-        print('FOUND:', str(len(d['found'])), sep='\t')
-        print('NOT FOUND:', str(len(d['not_found'])), sep='\t')
+    
+    curs.close(); conn.close()
