@@ -15,7 +15,7 @@ from random import choice
 def listen(src):
     # listen to the song to evaluate the file:
     clear_all()
-    os.popen('xdg-open ' + src.get())
+    os.popen('vlc ' + src.get())
 
 
 def clear_all():
