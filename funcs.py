@@ -1,6 +1,17 @@
 import sqlite3, re, subprocess, pickle
 
 
+def get_playlists():
+    """ returns a list of all playlists in the Pickle table in the sqlite db """
+
+    with sqlite3.Connection('music_db.sqlite') as conn:
+        curs = conn.cursor()
+        playlists = [x[0] for x in curs.execute('select distinct playlist from Pickle;').fetchall()]
+        curs.close()
+    
+    return playlists
+
+
 def fined(playlist):
     """ 
     Returns a dictionary of songs from a playlist
